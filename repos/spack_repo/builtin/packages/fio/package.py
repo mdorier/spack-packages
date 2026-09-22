@@ -51,15 +51,15 @@ class Fio(AutotoolsPackage):
     conflicts("+daos", when="platform=windows", msg="DAOS does not support Windows")
     conflicts("@:3.18", when="%gcc@10:", msg="gcc@10: sets -fno-common by default")
 
-    def setup_build_environment(self, env):
-        # fio's configure auto-detects the DAOS File System (dfs) engine by
-        # compiling a probe against the DAOS headers and libraries. Expose the
-        # DAOS prefix so the probe succeeds and the engine is built.
+    def flag_handler(self, name: str, flags: List[str]):
         if self.spec.satisfies("+daos"):
             daos = self.spec["daos"].prefix
-            env.append_flags("CPPFLAGS", "-I{0}".format(daos.include))
-            env.append_flags("LDFLAGS", "-L{0}".format(daos.lib64))
-            env.append_flags("LDFLAGS", "-L{0}".format(daos.lib))
+            if name in ("cflags", "cxxflags"):
+                flags.append("-I{0}".format(daos.include))
+            if name == "ldflags":
+                flags.append("-L{0}".format(daos.lib64))
+                flags.append("-L{0}".format(daos.lib))
+        return (flags, None, None)
 
     def configure_args(self):
         config_args = ["--disable-native"]
